@@ -1,0 +1,7 @@
+*.out
+bin/
+.#*
+.vscode/
+logs/
+deploy/
+configs/config-dev.toml

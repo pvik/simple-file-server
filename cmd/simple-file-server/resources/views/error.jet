@@ -1,0 +1,13 @@
+{{- include "partials/header" -}}
+
+<div class="columns">
+	 <div class="column col-12">Serving Files From: <i>{{ dir }}</i></div>
+</div>
+
+<hr>
+
+<div class="toast toast-error">
+  {{ err }}
+</div>
+
+{{- include "partials/footer" -}}
