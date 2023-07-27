@@ -32,3 +32,62 @@ jobs:
 
     #- name: Test
     #  run: go test -v ./...
+
+  build-release:
+    name: Build release Executable (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-musleabihf
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    env:
+      BINARY_EXTENSION: ${{ endsWith(matrix.target, '-msvc') && '.exe' || '' }}
+      PATH_BINARY: ${{ github.workspace }}/target/${{ matrix.TARGET }}/release/simple-file-server${{ matrix.EXTENSION }}${{ endsWith(matrix.target, '-msvc') && '.exe' || '' }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: 'install deps for linux build'
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: gcc libgl1-mesa-dev xorg-dev
+          version: 1.0
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}-simple-file-server${{ env.BINARY_EXTENSION }}
+          path: ${{ env.PATH_BINARY }}
+      - name: Evaluate shasum
+        run: echo -n $(shasum -ba 256 ${{ env.PATH_BINARY }} | cut -d " " -f 1) > ${{ env.PATH_BINARY }}.sha256
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}-simple-file-server.sha256
+          path: ${{ env.PATH_BINARY }}.sha256
+
+      - name: '[Optional] Publish Artifact'
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.PATH_BINARY }}
+          asset_name: ${{ matrix.target }}-simple-file-server${{ env.BINARY_EXTENSION }}
+          tag: ${{ github.ref }}
+          overwrite: true
+      - name: '[Optional] Publish Artifact (shasum)'
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.PATH_BINARY }}.sha256
+          asset_name: ${{ matrix.target }}-simple-file-server${{ env.BINARY_EXTENSION }}.sha256
+          tag: ${{ github.ref }}
+          overwrite: true
