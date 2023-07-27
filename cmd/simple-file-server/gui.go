@@ -92,8 +92,9 @@ func setupGUI(port int) fyne.Window {
 	// LAYOUT
 	mainLayout := container.New(layout.NewVBoxLayout(),
 		container.New(layout.NewFormLayout(),
-			widget.NewLabel("Root Directory"), uiRootDirEntry,
+			widget.NewLabel("Server IP"), widget.NewLabel(systemIP),
 			widget.NewLabel("Port"), uiPortEntry,
+			widget.NewLabel("Root Directory"), uiRootDirEntry,
 		),
 		uiStartStopBtn,
 	)
