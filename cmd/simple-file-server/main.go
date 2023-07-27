@@ -52,41 +52,75 @@ func init() {
 
 func main() {
 	defer service.Shutdown()
-	defer stopFileServer()
+	defer func() {
+		err := stopFileServer()
+		if err != nil {
+			log.Errorf("unable to shutdown file server: %s", err)
+		}
+	}()
 
 	if isGUI {
 		w := setupGUI(port)
 		w.ShowAndRun()
 	} else {
 		// handle CLI
-		startFileServer(rootDir, port)
+		err := startFileServer(rootDir, port)
+		if err != nil {
+			log.Errorf("unable to start file server: %s", err)
+		}
 	}
 }
 
-func stopFileServer() {
+func stopFileServer() error {
 	if fileServerRunning && fsApp != nil {
 		log.Infof("shutdown file-server")
-		fsApp.Shutdown()
+		err := fsApp.Shutdown()
+		if err != nil {
+			log.Errorf("unable to shutdown file server: %s", err)
+			return err
+		}
+		fileServerRunning = false
+		fsApp = nil
 	}
+	return nil
 }
 
-func startFileServer(rootDir string, port int) {
-	fileServErr := make(chan error, 1)
+func startFileServer(rootDir string, port int) error {
+	fileServErr := make(chan error, 2)
 	fileServApp := make(chan *fiber.App, 1)
 
 	go setupFileServer(fileServApp, fileServErr, rootDir, port)
+
+	fsErr := <-fileServErr
+	if fsErr != nil {
+		log.Errorf("%s", fsErr)
+		return fsErr
+	}
 
 	fsApp = <-fileServApp
 	fileServerRunning = true
 
 	// block here
-	fsErr := <-fileServErr
+	fsErr = <-fileServErr
 	if fsErr != nil {
 		log.Errorf("%s", fsErr)
+		return fsErr
 	}
+
+	return nil
 }
 
 func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, rootDir string, port int) {
+
+	validDir, err := isValidDir(rootDir)
+	if err != nil {
+		fileServErr <- fmt.Errorf("Invalid Root Directory: %s", err)
+		return
+	}
+	if !validDir {
+		fileServErr <- fmt.Errorf("Invalid Root Directory")
+		return
+	}
 
 	viewsfSys, err := fs.Sub(res, "resources/views")
 	if err != nil {
@@ -132,6 +166,7 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 		Views:             engine,
 	})
 
+	fileServErr <- nil
 	fileServApp <- app
 	defer app.Shutdown()
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"os"
 )
 
 // Get preferred outbound ip of this machine
@@ -14,5 +15,18 @@ func getServerIP() (net.IP, error) {
 
 		localAddr := conn.LocalAddr().(*net.UDPAddr)
 		return localAddr.IP, nil
+	}
+}
+
+func isValidDir(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	if fileInfo.IsDir() {
+		return true, nil
+	} else {
+		return false, nil
 	}
 }
