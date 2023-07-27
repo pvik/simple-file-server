@@ -72,7 +72,7 @@ jobs:
       - name: Build
         run: |
           go install fyne.io/fyne/v2/cmd/fyne@latest
-          go build -v ./cmd/...
+          go build -v -o ${{ env.PATH_BINARY }} ./cmd/...
 
       - uses: actions/upload-artifact@v2
         with:
