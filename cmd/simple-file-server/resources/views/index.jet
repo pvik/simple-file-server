@@ -32,10 +32,10 @@
 				<tr>
 					<td align="center">{{ .ModTime() | formatTime }}</td>
 					<td align="right">{{if .IsDir() }}{{else}}{{ .Size() | filesizeString }}{{end}}</td>
-					<td align="left">{{if .IsDir() }}
-						<b>
-							<a href="/{{ if subDir }}{{subDir}}/{{end}}{{ .Name() }}">{{end}}{{ .Name() }}{{if .IsDir() }}/</a>
-						</b>{{end}}
+					<td align="left">
+						{{if .IsDir() }}<b>{{end}}
+							<a href="/{{ if subDir }}{{subDir}}/{{end}}{{ .Name() }}">{{ .Name() }}{{if .IsDir() }}/{{ end }}</a>
+						{{if .IsDir() }}</b>{{end}}
 					</td>
 				</tr>	
                 {{- end -}}

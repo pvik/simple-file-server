@@ -176,15 +176,30 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 
 	app.Get("/*", func(c *fiber.Ctx) error {
 		dir := rootDir
-		subDir := c.Params("*")
+		subPath := c.Params("*")
 
-		if subDir != "" {
-			dir = dir + "/" + subDir
+		log.Infof("GET: /%s", subPath)
+
+		if subPath != "" {
+			dir = dir + "/" + subPath
+
+			validDir, err := isValidDir(dir)
+			if err != nil {
+				return c.Render("error", fiber.Map{
+					"err": err,
+					"dir": dir,
+				})
+			}
+			if !validDir {
+				// this is a file, to be serverd for download
+				log.Debugf("serving file: %s", dir)
+				return c.SendFile(dir, false)
+			}
 		}
-		log.WithField("body", string(c.Body())).
-			WithField("query", c.Queries()).
-			//WithField("headers", c.GetReqHeaders()).
-			Infof("GET: /%s", subDir)
+
+		// for _, f := range files {
+		// 	log.Debugf("%s - %d - %t - %s - %s", f.Mode().String(), f.Size(), f.IsDir(), f.Name(), f.ModTime().Format(time.ANSIC))
+		// }
 
 		files, err := getDirContent(dir)
 		if err != nil {
@@ -195,13 +210,9 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 			})
 		}
 
-		// for _, f := range files {
-		// 	log.Debugf("%s - %d - %t - %s - %s", f.Mode().String(), f.Size(), f.IsDir(), f.Name(), f.ModTime().Format(time.ANSIC))
-		// }
-
 		return c.Render("index", fiber.Map{
 			"WorkingDirectory": dir,
-			"subDir":           subDir,
+			"subDir":           subPath,
 			"Files":            files,
 		})
 	}).Name("dir handler")
