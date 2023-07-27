@@ -6,7 +6,7 @@ A simple file server bundled as a single binary, capable of serving files from a
 
 <img src="./screenshot-1.png" width="80%" height="80%">
 
-<img src="./screenshot-2.png" >
+<img src="./screenshot-2.png" width="80%" height="80%">
 
 ###  CLI Usage 
 
