@@ -23,6 +23,7 @@ var uiRootDirStringBinding = binding.NewString()
 var uiPortEntry *widget.Entry
 var uiRootDirEntry *widget.Entry
 var uiStartStopBtn *widget.Button
+var uiAllowUpload bool
 
 func setupGUI(port int) fyne.Window {
 	a := app.New()
@@ -92,7 +93,13 @@ func setupGUI(port int) fyne.Window {
 	// LAYOUT
 	mainLayout := container.New(layout.NewVBoxLayout(),
 		container.New(layout.NewFormLayout(),
-			widget.NewLabel("Server IP"), widget.NewLabel(systemIP),
+			widget.NewLabel("Server IP"),
+			widget.NewLabel(systemIP),
+			widget.NewLabel("Allow Uploads"),
+			widget.NewCheck("", func(value bool) {
+				log.Println("Check set to", value)
+				uiAllowUpload = value
+			}),
 			widget.NewLabel("Port"), uiPortEntry,
 			widget.NewLabel("Root Directory"), uiRootDirEntry,
 		),
@@ -129,9 +136,6 @@ func startStopServer(win fyne.Window) {
 
 	rootDir = strings.TrimSpace(rootDir)
 
-	// TODO
-	allowUpload := false
-
 	if fileServerRunning && fsApp != nil {
 		err := stopFileServer()
 		if err != nil {
@@ -142,7 +146,7 @@ func startStopServer(win fyne.Window) {
 	} else {
 		uiHandler_stopServer()
 		go func() {
-			err := startFileServer(rootDir, port, allowUpload)
+			err := startFileServer(rootDir, port, uiAllowUpload)
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Unable to start server: \n\n%s", err), win)
 				uiHandler_startServer()

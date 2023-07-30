@@ -201,7 +201,7 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 
 		log.Infof("GET: /%s", subPath)
 
-		fiberMap, dir, isFile, err := handleIndex(subPath)
+		fiberMap, dir, isFile, err := handleIndex(subPath, allowUpload)
 		if err != nil {
 			log.Errorf("unable to handle index: %s", err)
 			return c.Render("error", fiberMap)
@@ -230,7 +230,7 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 	fileServErr <- nil
 }
 
-func handleIndex(subPath string) (fiber.Map, string, bool, error) {
+func handleIndex(subPath string, allowUpload bool) (fiber.Map, string, bool, error) {
 	dir := rootDir
 	if subPath != "" {
 		dir = dir + "/" + subPath

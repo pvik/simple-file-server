@@ -12,6 +12,8 @@ A simple file server bundled as a single binary, capable of serving files from a
 
 ```
 Usage of simple-file-server:
+  -allowUpload
+        allow upload to server
   -cli
         run service in CLI
   -logFile string
