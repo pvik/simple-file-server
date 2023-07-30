@@ -20,6 +20,7 @@ import (
 
 var port int
 var isGUI bool
+var allowUpload bool
 var rootDir string
 
 var fileServerRunning bool
@@ -35,9 +36,10 @@ var (
 func init() {
 	// Initialize config file
 	// Setup Logging
-	rootDir, port, isGUI = service.InitService()
+	rootDir, port, allowUpload, isGUI = service.InitService()
 
 	log.Infof("Serving files from %s", rootDir)
+	log.Infof("Allow Upload:  %t", allowUpload)
 
 	serverIP, err := getServerIP()
 	if err != nil {
@@ -64,7 +66,7 @@ func main() {
 		w.ShowAndRun()
 	} else {
 		// handle CLI
-		err := startFileServer(rootDir, port)
+		err := startFileServer(rootDir, port, allowUpload)
 		if err != nil {
 			log.Errorf("unable to start file server: %s", err)
 		}
@@ -85,11 +87,11 @@ func stopFileServer() error {
 	return nil
 }
 
-func startFileServer(rootDir string, port int) error {
+func startFileServer(rootDir string, port int, allowUpload bool) error {
 	fileServErr := make(chan error, 2)
 	fileServApp := make(chan *fiber.App, 1)
 
-	go setupFileServer(fileServApp, fileServErr, rootDir, port)
+	go setupFileServer(fileServApp, fileServErr, rootDir, port, allowUpload)
 
 	fsErr := <-fileServErr
 	if fsErr != nil {
@@ -110,7 +112,7 @@ func startFileServer(rootDir string, port int) error {
 	return nil
 }
 
-func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, rootDir string, port int) {
+func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, rootDir string, port int, allowUpload bool) {
 
 	validDir, err := isValidDir(rootDir)
 	if err != nil {
@@ -174,47 +176,45 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 		Root: http.FS(staticfSys),
 	}))
 
-	app.Get("/*", func(c *fiber.Ctx) error {
+	app.Post("/upload", func(c *fiber.Ctx) error {
+		file, err := c.FormFile("file")
+		if err != nil {
+			log.Errorf("unable to get upload file: %s", err)
+			return c.Render("error", fiber.Map{
+				"err": err,
+				"dir": rootDir,
+			})
+		}
+
 		dir := rootDir
+		subPath := c.FormValue("subdir", rootDir)
+
+		if subPath != "" {
+			dir = fmt.Sprintf("%s/%s", rootDir, subPath)
+		}
+		c.SaveFile(file, fmt.Sprintf("%s/%s", dir, file.Filename))
+
+		return c.Redirect(fmt.Sprintf("/%s", subPath))
+	})
+
+	app.Get("/*", func(c *fiber.Ctx) error {
 		subPath := c.Params("*")
 
 		log.Infof("GET: /%s", subPath)
 
-		if subPath != "" {
-			dir = dir + "/" + subPath
-
-			validDir, err := isValidDir(dir)
-			if err != nil {
-				return c.Render("error", fiber.Map{
-					"err": err,
-					"dir": dir,
-				})
-			}
-			if !validDir {
-				// this is a file, to be serverd for download
-				log.Debugf("serving file: %s", dir)
-				return c.SendFile(dir, false)
-			}
-		}
-
-		// for _, f := range files {
-		// 	log.Debugf("%s - %d - %t - %s - %s", f.Mode().String(), f.Size(), f.IsDir(), f.Name(), f.ModTime().Format(time.ANSIC))
-		// }
-
-		files, err := getDirContent(dir)
+		fiberMap, dir, isFile, err := handleIndex(subPath)
 		if err != nil {
-			log.Errorf("unable to get files in directory(%s): %s", dir, err)
-			return c.Render("error", fiber.Map{
-				"err": err,
-				"dir": dir,
-			})
+			log.Errorf("unable to handle index: %s", err)
+			return c.Render("error", fiberMap)
 		}
 
-		return c.Render("index", fiber.Map{
-			"WorkingDirectory": dir,
-			"subDir":           subPath,
-			"Files":            files,
-		})
+		if isFile {
+			// this is a file, to be serverd for download
+			log.Debugf("serving file: %s", dir)
+			return c.SendFile(dir, false)
+		}
+
+		return c.Render("index", fiberMap)
 	}).Name("dir handler")
 
 	app.Get("/+/:file.:ext", func(c *fiber.Ctx) error {
@@ -229,4 +229,41 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 	}
 
 	fileServErr <- nil
+}
+
+func handleIndex(subPath string) (fiber.Map, string, bool, error) {
+	dir := rootDir
+	if subPath != "" {
+		dir = dir + "/" + subPath
+
+		validDir, err := isValidDir(dir)
+		if err != nil {
+			return fiber.Map{
+				"err": err,
+				"dir": dir,
+			}, dir, false, err
+		}
+		if !validDir {
+			// this is a file, to be serverd for download
+			return fiber.Map{}, dir, true, nil
+		}
+	}
+
+	// for _, f := range files {
+	// 	log.Debugf("%s - %d - %t - %s - %s", f.Mode().String(), f.Size(), f.IsDir(), f.Name(), f.ModTime().Format(time.ANSIC))
+	// }
+
+	files, err := getDirContent(dir)
+	if err != nil {
+		return fiber.Map{
+			"err": err,
+			"dir": dir,
+		}, dir, false, fmt.Errorf("unable to get files in directory(%s): %s", dir, err)
+	}
+	return fiber.Map{
+		"WorkingDirectory": dir,
+		"SubDir":           subPath,
+		"AllowUpload":      allowUpload,
+		"Files":            files,
+	}, dir, false, nil
 }

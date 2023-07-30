@@ -129,6 +129,9 @@ func startStopServer(win fyne.Window) {
 
 	rootDir = strings.TrimSpace(rootDir)
 
+	// TODO
+	allowUpload := false
+
 	if fileServerRunning && fsApp != nil {
 		err := stopFileServer()
 		if err != nil {
@@ -139,7 +142,7 @@ func startStopServer(win fyne.Window) {
 	} else {
 		uiHandler_stopServer()
 		go func() {
-			err := startFileServer(rootDir, port)
+			err := startFileServer(rootDir, port, allowUpload)
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Unable to start server: \n\n%s", err), win)
 				uiHandler_startServer()

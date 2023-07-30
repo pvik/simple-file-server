@@ -14,7 +14,7 @@ var logFileHandle *os.File
 //   - initialize config file (passed in as command line arg)
 //   - Setup Logging
 //   - Connect to DB & setup ORM
-func InitService() (string, int, bool) {
+func InitService() (string, int, bool, bool) {
 	currentWorkingDir, err := os.Getwd()
 	if err != nil {
 		log.Panicf("unable to get working directory: %s", err)
@@ -23,10 +23,12 @@ func InitService() (string, int, bool) {
 	var rootDir string
 	var logFile string
 	var port int
+	var allowUpload bool
 	var isCli bool
 	flag.StringVar(&rootDir, "root", currentWorkingDir, "root directory to serve files")
 	flag.IntVar(&port, "port", 8000, "port to listen on")
 	flag.BoolVar(&isCli, "cli", false, "run service in CLI")
+	flag.BoolVar(&allowUpload, "allowUpload", false, "allow upload to server")
 	flag.StringVar(&logFile, "logFile", "", "log file")
 	flag.Parse()
 
@@ -68,7 +70,7 @@ func InitService() (string, int, bool) {
 	// 	log.SetLevel(log.PanicLevel)
 	// }
 
-	return rootDir, port, !isCli
+	return rootDir, port, allowUpload, !isCli
 }
 
 // Shutdown closes any open files or pipes the microservice started

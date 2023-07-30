@@ -5,7 +5,22 @@
 		<i>{{ WorkingDirectory }}</i>
 	</div>
 </div>
-<hr/>
+<hr />
+
+{{if AllowUpload}}
+<div class="columns">
+	<div class="column col-12">
+		 <form action="/upload" method="POST" enctype="multipart/form-data">
+		 	   <input class="form-input" type="hidden" id="subdir" name="subdir" value="{{SubDir}}">
+		 	   <div class="form-group">
+					<input class="form-input" id="file" name="file" type="file" multiple />
+				</div>
+				<button type="submit">Upload</button>
+		 </form>
+	</div>
+</div>
+<hr />
+{{end}}
 <div class="columns">
 	<div class="column col-12">
 		<table class="table table-striped table-hover">
@@ -18,7 +33,7 @@
 			</thead>
 			<tbody>
 
-                {{ if subDir }}
+                {{ if SubDir }}
 				<tr>
 					<td align="center"></td>
 					<td align="left"></td>
@@ -34,7 +49,7 @@
 					<td align="right">{{if .IsDir() }}{{else}}{{ .Size() | filesizeString }}{{end}}</td>
 					<td align="left">
 						{{if .IsDir() }}<b>{{end}}
-							<a href="/{{ if subDir }}{{subDir}}/{{end}}{{ .Name() }}">{{ .Name() }}{{if .IsDir() }}/{{ end }}</a>
+							<a href="/{{ if SubDir }}{{SubDir}}/{{end}}{{ .Name() }}">{{ .Name() }}{{if .IsDir() }}/{{ end }}</a>
 						{{if .IsDir() }}</b>{{end}}
 					</td>
 				</tr>	
