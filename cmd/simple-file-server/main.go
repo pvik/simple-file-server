@@ -188,7 +188,6 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 
 		dir := rootDir
 		subPath := c.FormValue("subdir", "")
-		log.Debugf("subPath: %s", subPath)
 		if subPath != "" {
 			dir = fmt.Sprintf("%s/%s", rootDir, subPath)
 		}
