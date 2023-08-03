@@ -18,16 +18,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var port int
-var isGUI bool
-var allowUpload bool
-var compress bool
-var rootDir string
+var systemIP string
 
 var fileServerRunning bool
 var fsApp *fiber.App
-
-var systemIP string
 
 var (
 	//go:embed resources
@@ -41,10 +35,20 @@ func init() {
 		log.Infof("Git Commit: %s", commit)
 	}
 	log.Debug("=======================")
+}
+
+func main() {
+	defer service.Shutdown()
+	defer func() {
+		err := stopFileServer()
+		if err != nil {
+			log.Errorf("unable to shutdown file server: %s", err)
+		}
+	}()
 
 	// Initialize config file
 	// Setup Logging
-	rootDir, port, allowUpload, compress, isGUI = service.InitService()
+	rootDir, port, allowUpload, compress, isGUI := service.InitService()
 
 	log.Infof("Serving files from %s", rootDir)
 	log.Infof("Allow Upload:  %t", allowUpload)
@@ -58,19 +62,9 @@ func init() {
 	}
 
 	log.Infof("System IP: %s", systemIP)
-}
-
-func main() {
-	defer service.Shutdown()
-	defer func() {
-		err := stopFileServer()
-		if err != nil {
-			log.Errorf("unable to shutdown file server: %s", err)
-		}
-	}()
 
 	if isGUI {
-		w := setupGUI(port)
+		w := setupGUI(port, rootDir, allowUpload)
 		w.ShowAndRun()
 	} else {
 		// handle CLI
@@ -209,7 +203,7 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 
 		log.Infof("GET: /%s", subPath)
 
-		fiberMap, dir, isFile, err := handleIndex(subPath, allowUpload)
+		fiberMap, dir, isFile, err := handleIndex(rootDir, subPath, allowUpload)
 		if err != nil {
 			log.Errorf("unable to handle index: %s", err)
 			return c.Render("error", fiberMap)
@@ -233,7 +227,7 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 	fileServErr <- nil
 }
 
-func handleIndex(subPath string, allowUpload bool) (fiber.Map, string, bool, error) {
+func handleIndex(rootDir string, subPath string, allowUpload bool) (fiber.Map, string, bool, error) {
 	dir := rootDir
 	if subPath != "" {
 		dir = dir + "/" + subPath

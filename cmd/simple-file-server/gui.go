@@ -18,13 +18,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var uiAllowUpload bool
 var uiPortStringBinding = binding.NewString()
 var uiRootDirStringBinding = binding.NewString()
 var uiPortEntry *widget.Entry
 var uiRootDirEntry *widget.Entry
 var uiStartStopBtn *widget.Button
 
-func setupGUI(port int) fyne.Window {
+func setupGUI(port int, rootDir string, allowUpload bool) fyne.Window {
 	a := app.New()
 	win := a.NewWindow("simple-file-server")
 
@@ -90,7 +91,7 @@ func setupGUI(port int) fyne.Window {
 	})
 
 	uiAllowUploadCheck := widget.NewCheck("", func(value bool) {
-		allowUpload = value
+		uiAllowUpload = value
 	})
 
 	uiAllowUploadCheck.SetChecked(allowUpload)
@@ -148,7 +149,7 @@ func startStopServer(win fyne.Window) {
 	} else {
 		uiHandler_stopServer()
 		go func() {
-			err := startFileServer(rootDir, port, allowUpload, compress)
+			err := startFileServer(rootDir, port, uiAllowUpload, false)
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Unable to start server: \n\n%s", err), win)
 				uiHandler_startServer()
