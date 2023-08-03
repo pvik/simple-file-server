@@ -21,6 +21,7 @@ import (
 var port int
 var isGUI bool
 var allowUpload bool
+var compress bool
 var rootDir string
 
 var fileServerRunning bool
@@ -36,7 +37,7 @@ var (
 func init() {
 	// Initialize config file
 	// Setup Logging
-	rootDir, port, allowUpload, isGUI = service.InitService()
+	rootDir, port, allowUpload, compress, isGUI = service.InitService()
 
 	log.Infof("Serving files from %s", rootDir)
 	log.Infof("Allow Upload:  %t", allowUpload)
@@ -66,7 +67,7 @@ func main() {
 		w.ShowAndRun()
 	} else {
 		// handle CLI
-		err := startFileServer(rootDir, port, allowUpload)
+		err := startFileServer(rootDir, port, allowUpload, compress)
 		if err != nil {
 			log.Errorf("unable to start file server: %s", err)
 		}
@@ -87,11 +88,11 @@ func stopFileServer() error {
 	return nil
 }
 
-func startFileServer(rootDir string, port int, allowUpload bool) error {
+func startFileServer(rootDir string, port int, allowUpload, compress bool) error {
 	fileServErr := make(chan error, 2)
 	fileServApp := make(chan *fiber.App, 1)
 
-	go setupFileServer(fileServApp, fileServErr, rootDir, port, allowUpload)
+	go setupFileServer(fileServApp, fileServErr, rootDir, port, allowUpload, compress)
 
 	fsErr := <-fileServErr
 	if fsErr != nil {
@@ -112,7 +113,7 @@ func startFileServer(rootDir string, port int, allowUpload bool) error {
 	return nil
 }
 
-func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, rootDir string, port int, allowUpload bool) {
+func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, rootDir string, port int, allowUpload, compress bool) {
 
 	validDir, err := isValidDir(rootDir)
 	if err != nil {
@@ -210,7 +211,7 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 		if isFile {
 			// this is a file, to be serverd for download
 			log.Debugf("serving file: %s", dir)
-			return c.SendFile(dir, false)
+			return c.SendFile(dir, compress)
 		}
 
 		return c.Render("index", fiberMap)

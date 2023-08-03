@@ -16,6 +16,8 @@ Usage of simple-file-server:
         allow upload to server
   -cli
         run service in CLI
+  -compress
+        enable compression
   -logFile string
         log file
   -port int

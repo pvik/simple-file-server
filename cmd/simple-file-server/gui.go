@@ -148,7 +148,7 @@ func startStopServer(win fyne.Window) {
 	} else {
 		uiHandler_stopServer()
 		go func() {
-			err := startFileServer(rootDir, port, allowUpload)
+			err := startFileServer(rootDir, port, allowUpload, compress)
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Unable to start server: \n\n%s", err), win)
 				uiHandler_startServer()
