@@ -35,7 +35,7 @@ var (
 )
 
 func init() {
-	log.Info("Simple File Server v0.3")
+	log.Info("Simple File Server v0.4")
 	commit := getCommit()
 	if commit != "" {
 		log.Infof("Git Commit: %s", commit)
