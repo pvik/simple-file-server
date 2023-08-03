@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"os"
+	"runtime/debug"
 )
 
 // Get preferred outbound ip of this machine
@@ -29,4 +30,15 @@ func isValidDir(path string) (bool, error) {
 	} else {
 		return false, nil
 	}
+}
+
+func getCommit() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return setting.Value
+			}
+		}
+	}
+	return ""
 }

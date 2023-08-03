@@ -35,6 +35,13 @@ var (
 )
 
 func init() {
+	log.Infof("Simple File Server v0.3")
+	commit := getCommit()
+	if commit != "" {
+		log.Infof("Git Commit: %s", commit)
+	}
+	log.Infof("=======================")
+
 	// Initialize config file
 	// Setup Logging
 	rootDir, port, allowUpload, compress, isGUI = service.InitService()
@@ -162,7 +169,7 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 		// TrustedProxies:          []string{"0.0.0.0", "1.1.1.1/30"}, // IP address or IP address range
 		// ProxyHeader:             fiber.HeaderXForwardedFor,
 		//Prefork:                  true,
-		AppName:           "simple-http-server",
+		AppName:           "simple-file-server",
 		BodyLimit:         5 * 1024 * 1024, // bytes = 5 MB
 		ReadTimeout:       60 * time.Second,
 		EnablePrintRoutes: true,
