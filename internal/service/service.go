@@ -3,6 +3,7 @@ package service
 import (
 	"flag"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -22,6 +23,7 @@ func InitService() (string, int, bool, bool, bool) {
 
 	var rootDir string
 	var logFile string
+	var logLevel string
 	var port int
 	var allowUpload bool
 	var isCli bool
@@ -32,6 +34,7 @@ func InitService() (string, int, bool, bool, bool) {
 	flag.BoolVar(&allowUpload, "allowUpload", false, "allow upload to server")
 	flag.BoolVar(&compress, "compress", false, "enable compression")
 	flag.StringVar(&logFile, "logFile", "", "log file")
+	flag.StringVar(&logLevel, "logLevel", "", "log level: trace, debug, info, warn, error")
 	flag.Parse()
 
 	if logFile != "" {
@@ -54,23 +57,23 @@ func InitService() (string, int, bool, bool, bool) {
 
 	log.Infof("using port: %d", port)
 	log.Infof("CLI: %t", isCli)
-	// // set log level
-	// switch strings.ToLower(c.AppConf.Log.Level) {
-	// case "trace":
-	// 	log.SetLevel(log.TraceLevel)
-	// case "debug":
-	// 	log.SetLevel(log.DebugLevel)
-	// case "info":
-	// 	log.SetLevel(log.InfoLevel)
-	// case "warn":
-	// 	log.SetLevel(log.WarnLevel)
-	// case "error":
-	// 	log.SetLevel(log.ErrorLevel)
-	// case "fatal":
-	// 	log.SetLevel(log.FatalLevel)
-	// case "panic":
-	// 	log.SetLevel(log.PanicLevel)
-	// }
+	// set log level
+	switch strings.ToLower(logLevel) {
+	case "trace":
+		log.SetLevel(log.TraceLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	case "fatal":
+		log.SetLevel(log.FatalLevel)
+	case "panic":
+		log.SetLevel(log.PanicLevel)
+	}
 
 	return rootDir, port, allowUpload, compress, !isCli
 }
