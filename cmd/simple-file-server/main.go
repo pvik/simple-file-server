@@ -217,11 +217,6 @@ func setupFileServer(fileServApp chan<- *fiber.App, fileServErr chan<- error, ro
 		return c.Render("index", fiberMap)
 	}).Name("dir handler")
 
-	app.Get("/+/:file.:ext", func(c *fiber.Ctx) error {
-		msg := fmt.Sprintf("%s -  %s.%s", c.Params("+"), c.Params("file"), c.Params("ext"))
-		return c.SendString(msg)
-	}).Name("file handler")
-
 	err = app.Listen(fmt.Sprintf(":%d", port))
 	if err != nil {
 		fileServErr <- fmt.Errorf("Unable to listen on %d, check the port is not in use by another process", port)
