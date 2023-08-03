@@ -35,12 +35,12 @@ var (
 )
 
 func init() {
-	log.Infof("Simple File Server v0.3")
+	log.Info("Simple File Server v0.3")
 	commit := getCommit()
 	if commit != "" {
 		log.Infof("Git Commit: %s", commit)
 	}
-	log.Infof("=======================")
+	log.Debug("=======================")
 
 	// Initialize config file
 	// Setup Logging
@@ -83,7 +83,7 @@ func main() {
 
 func stopFileServer() error {
 	if fileServerRunning && fsApp != nil {
-		log.Infof("shutdown file-server")
+		log.Info("shutdown file-server")
 		err := fsApp.Shutdown()
 		if err != nil {
 			log.Errorf("unable to shutdown file server: %s", err)
@@ -250,10 +250,6 @@ func handleIndex(subPath string, allowUpload bool) (fiber.Map, string, bool, err
 			return fiber.Map{}, dir, true, nil
 		}
 	}
-
-	// for _, f := range files {
-	// 	log.Debugf("%s - %d - %t - %s - %s", f.Mode().String(), f.Size(), f.IsDir(), f.Name(), f.ModTime().Format(time.ANSIC))
-	// }
 
 	files, err := getDirContent(dir)
 	if err != nil {
