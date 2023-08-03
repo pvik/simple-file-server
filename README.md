@@ -20,6 +20,8 @@ Usage of simple-file-server:
         enable compression
   -logFile string
         log file
+  -logLevel string
+        log level: trace, debug, info, warn, error
   -port int
         port to listen on (default 8000)
   -root string
