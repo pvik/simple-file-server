@@ -1,6 +1,6 @@
 module github.com/pvik/simple-file-server
 
-go 1.23
+go 1.27
 
 require (
 	fyne.io/fyne/v2 v2.5.2
