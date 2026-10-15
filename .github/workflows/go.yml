@@ -59,9 +59,21 @@ jobs:
           mkdir -p dist
           go build -v -trimpath -o "dist/$BIN" ./cmd/...
 
+      # No single checksum tool exists on all three runners: linux has
+      # sha256sum, macos only has shasum, and git-bash on windows has
+      # neither, so fall back to certutil there.
       - name: Evaluate shasum
         shell: bash
-        run: shasum -ba 256 "dist/$BIN" | cut -d " " -f 1 > "dist/$BIN.sha256"
+        working-directory: dist
+        run: |
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "$BIN" | cut -d " " -f 1 > "$BIN.sha256"
+          elif command -v shasum >/dev/null 2>&1; then
+            shasum -ba 256 "$BIN" | cut -d " " -f 1 > "$BIN.sha256"
+          else
+            certutil -hashfile "$BIN" SHA256 | sed -n 2p | tr -d '[:space:]' > "$BIN.sha256"
+          fi
+          cat "$BIN.sha256"
 
       - uses: actions/upload-artifact@v7
         with:
