@@ -7,79 +7,75 @@ on:
     branches: [ "main" ]
   release:
     types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
 
   build-release:
-    name: Build release Executable (${{ matrix.os }})
+    name: Build release Executable (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     strategy:
+      # Report every platform independently; one failure must not hide the rest.
+      fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-          - os: ubuntu-latest
-            target: armv7-unknown-linux-musleabihf
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-musl
+          - os: ubuntu-24.04
+            target: linux-amd64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
           - os: macos-latest
-            target: x86_64-apple-darwin
-          - os: macos-latest
-            target: aarch64-apple-darwin
+            target: darwin-arm64
+          - os: macos-15-intel
+            target: darwin-amd64
           - os: windows-latest
-            target: x86_64-pc-windows-msvc
+            target: windows-amd64
+            ext: .exe
     env:
-      BINARY_EXTENSION: ${{ endsWith(matrix.target, '-msvc') && '.exe' || '' }}
-      PATH_BINARY: ${{ github.workspace }}/target/${{ matrix.TARGET }}/release/simple-file-server${{ matrix.EXTENSION }}${{ endsWith(matrix.target, '-msvc') && '.exe' || '' }}
+      # Target-prefixed so artifact names, release asset names and the file
+      # basename are all one string and cannot collide across jobs.
+      BIN: ${{ matrix.target }}-simple-file-server${{ matrix.ext }}
     steps:
-      - uses: actions/checkout@v4
-        
+      - uses: actions/checkout@v7
+
       - name: Install deps for linux build
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: gcc libgl1-mesa-dev xorg-dev
-          version: 1.0
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc libgl-dev libglvnd-dev xorg-dev \
+            libwayland-dev libxkbcommon-dev wayland-protocols
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
-          go-version: '1.23'
+          go-version-file: go.mod
 
       - name: Build
+        shell: bash
         run: |
-          go install fyne.io/fyne/v2/cmd/fyne@latest
-          go build -v -o ${{ env.PATH_BINARY }} ./cmd/...
+          mkdir -p dist
+          go build -v -trimpath -o "dist/$BIN" ./cmd/...
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.target }}-simple-file-server${{ env.BINARY_EXTENSION }}
-          path: ${{ env.PATH_BINARY }}
-          
       - name: Evaluate shasum
-        run: echo -n $(shasum -ba 256 ${{ env.PATH_BINARY }} | cut -d " " -f 1) > ${{ env.PATH_BINARY }}.sha256
-        
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.target }}-simple-file-server.sha256
-          path: ${{ env.PATH_BINARY }}.sha256
+        shell: bash
+        run: shasum -ba 256 "dist/$BIN" | cut -d " " -f 1 > "dist/$BIN.sha256"
 
-      - name: '[Optional] Publish Artifact'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+      - name: '[Optional] Publish Artifacts'
         if: ${{ github.event_name == 'release' }}
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@2.11.5
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.PATH_BINARY }}
-          asset_name: ${{ matrix.target }}-simple-file-server${{ env.BINARY_EXTENSION }}
+          file: dist/*
+          file_glob: true
           tag: ${{ github.ref }}
           overwrite: true
-          
-      - name: '[Optional] Publish Artifact (shasum)'
-        if: ${{ github.event_name == 'release' }}
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.PATH_BINARY }}.sha256
-          asset_name: ${{ matrix.target }}-simple-file-server${{ env.BINARY_EXTENSION }}.sha256
-          tag: ${{ github.ref }}
-          overwrite: true
+          check_duplicates: false

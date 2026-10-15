@@ -5,3 +5,4 @@ bin/
 logs/
 deploy/
 configs/config-dev.toml
+dist/
